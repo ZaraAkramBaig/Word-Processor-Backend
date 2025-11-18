@@ -23,6 +23,128 @@ function MenuBar({
     setActiveMenu(null);
   };
 
+  const handleInsertImageFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imgHTML = `<img src="${event.target.result}" style="max-width: 100%; height: auto;" alt="Uploaded image" />`;
+          document.execCommand('insertHTML', false, imgHTML);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    
+    input.click();
+    closeMenu();
+  };
+
+  const handleFindReplace = () => {
+    const searchTerm = prompt('Find:');
+    if (!searchTerm) return;
+    
+    const replaceTerm = prompt('Replace with:');
+    if (replaceTerm === null) return;
+    
+    const editor = document.querySelector('.editor');
+    if (!editor) return;
+    
+    let content = editor.innerHTML;
+    const regex = new RegExp(searchTerm, 'gi');
+    
+    const replaceAll = window.confirm('Replace all occurrences? (OK = Yes, Cancel = First only)');
+    
+    if (replaceAll) {
+      content = content.replace(regex, replaceTerm);
+    } else {
+      content = content.replace(regex, replaceTerm);
+    }
+    
+    editor.innerHTML = content;
+    closeMenu();
+  };
+
+  const handleTemplate = (templateType) => {
+    const editor = document.querySelector('.editor');
+    if (!editor) return;
+    
+    let templateContent = '';
+    
+    switch(templateType) {
+      case 'blank':
+        templateContent = '';
+        break;
+      case 'business':
+        templateContent = `
+          <div style="margin-top: 2in;">
+            <p><strong>[Your Name]</strong></p>
+            <p>[Your Address]</p>
+            <p>[City, State ZIP]</p>
+            <br/>
+            <p>[Date]</p>
+            <br/>
+            <p>[Recipient Name]</p>
+            <p>[Company]</p>
+            <p>[Address]</p>
+            <br/>
+            <p>Dear [Recipient Name],</p>
+            <br/>
+            <p>[Letter body]</p>
+            <br/>
+            <p>Sincerely,</p>
+            <p>[Your Name]</p>
+          </div>
+        `;
+        break;
+      case 'resume':
+        templateContent = `
+          <div style="text-align: center;">
+            <h1 style="margin-bottom: 0;">[YOUR NAME]</h1>
+            <p>[Email] | [Phone] | [LinkedIn]</p>
+          </div>
+          <hr/>
+          <h2>EXPERIENCE</h2>
+          <p><strong>[Job Title]</strong> - [Company] ([Date Range])</p>
+          <ul>
+            <li>[Achievement/Responsibility]</li>
+          </ul>
+          <h2>EDUCATION</h2>
+          <p><strong>[Degree]</strong> - [University] ([Year])</p>
+          <h2>SKILLS</h2>
+          <p>[Skill 1], [Skill 2], [Skill 3]</p>
+        `;
+        break;
+      case 'report':
+        templateContent = `
+          <div style="text-align: center;">
+            <h1>[REPORT TITLE]</h1>
+            <p>Prepared by: [Your Name]</p>
+            <p>Date: [Date]</p>
+          </div>
+          <br/><br/>
+          <h2>Executive Summary</h2>
+          <p>[Summary content]</p>
+          <h2>Introduction</h2>
+          <p>[Introduction content]</p>
+          <h2>Findings</h2>
+          <p>[Findings content]</p>
+          <h2>Conclusion</h2>
+          <p>[Conclusion content]</p>
+        `;
+        break;
+      default:
+        templateContent = '';
+    }
+    
+    editor.innerHTML = templateContent;
+    closeMenu();
+  };
+
   return (
     <div className="menu-bar">
       <div className="menu-item">
@@ -66,6 +188,31 @@ function MenuBar({
       <div className="menu-item">
         <button 
           className="menu-button" 
+          onClick={() => toggleMenu('templates')}
+        >
+          Templates
+        </button>
+        {activeMenu === 'templates' && (
+          <div className="dropdown-menu">
+            <button onClick={() => { handleTemplate('blank'); }}>
+              Blank Document
+            </button>
+            <button onClick={() => { handleTemplate('business'); }}>
+              Business Letter
+            </button>
+            <button onClick={() => { handleTemplate('resume'); }}>
+              Resume
+            </button>
+            <button onClick={() => { handleTemplate('report'); }}>
+              Report
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="menu-item">
+        <button 
+          className="menu-button" 
           onClick={() => toggleMenu('edit')}
         >
           Edit
@@ -92,7 +239,7 @@ function MenuBar({
             <button onClick={() => { document.execCommand('selectAll'); closeMenu(); }}>
               Select All <span className="shortcut">Ctrl+A</span>
             </button>
-            <button onClick={closeMenu}>
+            <button onClick={handleFindReplace}>
               Find & Replace <span className="shortcut">Ctrl+F</span>
             </button>
           </div>
@@ -112,7 +259,10 @@ function MenuBar({
               Table
             </button>
             <button onClick={() => { onInsertImage(); closeMenu(); }}>
-              Image
+              Image (URL)
+            </button>
+            <button onClick={handleInsertImageFile}>
+              Upload Image
             </button>
             <button onClick={() => { onInsertPageBreak(); closeMenu(); }}>
               Page Break
@@ -176,17 +326,23 @@ function MenuBar({
         </button>
         {activeMenu === 'tools' && (
           <div className="dropdown-menu">
-            <button onClick={closeMenu}>
+            <button onClick={() => { closeMenu(); }}>
               Spelling & Grammar
             </button>
-            <button onClick={closeMenu}>
+            <button onClick={() => { closeMenu(); }}>
               Word Count
             </button>
             <div className="menu-divider"></div>
-            <button onClick={closeMenu}>
+            <button onClick={() => { 
+              alert('Track Changes feature - This will be connected to TrackChangesPanel in a future update');
+              closeMenu(); 
+            }}>
               Track Changes
             </button>
-            <button onClick={closeMenu}>
+            <button onClick={() => { 
+              alert('Comments feature - Coming soon');
+              closeMenu(); 
+            }}>
               Comments
             </button>
           </div>
@@ -202,14 +358,23 @@ function MenuBar({
         </button>
         {activeMenu === 'help' && (
           <div className="dropdown-menu">
-            <button onClick={closeMenu}>
+            <button onClick={() => {
+              alert('Word Processor v1.0\n\nA modern word processing application with rich text editing, spell checking, and document management features.');
+              closeMenu();
+            }}>
               Documentation
             </button>
-            <button onClick={closeMenu}>
+            <button onClick={() => {
+              alert('Keyboard Shortcuts:\n\nCtrl+N - New Document\nCtrl+O - Open Document\nCtrl+S - Save Document\nCtrl+P - Print\nCtrl+Z - Undo\nCtrl+Y - Redo\nCtrl+B - Bold\nCtrl+I - Italic\nCtrl+U - Underline');
+              closeMenu();
+            }}>
               Keyboard Shortcuts
             </button>
             <div className="menu-divider"></div>
-            <button onClick={closeMenu}>
+            <button onClick={() => {
+              alert('Word Processor v1.0\n\nDeveloped for CS 80/82/110/104\n© 2025');
+              closeMenu();
+            }}>
               About
             </button>
           </div>

@@ -216,3 +216,30 @@
   color: #323130;
   margin: 8px 0;
 }
+
+/* Spelling error highlighting in editor */
+.spelling-error {
+  background-color: #ff6b6b;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.spelling-error:hover {
+  background-color: #ff5252;
+  transform: scale(1.05);
+}
+
+/* Locate button styling */
+.action-btn.locate {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  margin-right: 5px;
+}
+
+.action-btn.locate:hover {
+  background: #45a049;
+}

@@ -36,6 +36,16 @@ function Editor({ content, onChange }) {
     };
   }, []);
 
+  // Listen for table insert event from MenuBar
+  useEffect(() => {
+    const handleInsertTableEvent = () => {
+      setShowTableDialog(true);
+    };
+    
+    window.addEventListener('insertTable', handleInsertTableEvent);
+    return () => window.removeEventListener('insertTable', handleInsertTableEvent);
+  }, []);
+
   // Calculate page count based on content height
   useEffect(() => {
     const calculatePages = () => {
@@ -160,6 +170,3 @@ function Editor({ content, onChange }) {
 }
 
 export default Editor;
-[
-  [ ]
-]
