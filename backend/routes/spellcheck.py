@@ -18,34 +18,50 @@ ENGLISH_WORDS = set(words.words())
 
 @router.post("/check", response_model=SpellCheckResponse)
 async def check_spelling(request: SpellCheckRequest):
-    """Check spelling in text (FR-3)"""
     text = request.text
     
-    # Tokenize words
     word_pattern = re.compile(r'\b[a-zA-Z]+\b')
     found_words = word_pattern.findall(text)
     
     errors = []
     suggestions = {}
     
+    # Calculate page breaks based on your editor's logic
+    page_break_indices = []
+    PAGE_MARKER = "<div class=\"page-divider\""
+    idx = 0
+    while True:
+        idx = text.find(PAGE_MARKER, idx)
+        if idx == -1:
+            break
+        page_break_indices.append(idx)
+        idx += len(PAGE_MARKER)
+    
+    def calc_page_num(pos):
+        # If you use page dividers, count how many break markers before pos
+        page = 1
+        for break_idx in page_break_indices:
+            if pos > break_idx:
+                page += 1
+            else:
+                break
+        return page
+
     for i, word in enumerate(found_words):
         word_lower = word.lower()
-        
         if word_lower not in ENGLISH_WORDS and len(word) > 1:
-            # Find position in text
             position = text.find(word)
-            
             errors.append({
                 "word": word,
                 "position": position,
                 "length": len(word),
-                "index": i
+                "index": i,
+                "page": calc_page_num(position), # page number
             })
-            
-            # Generate simple suggestions (Levenshtein distance would be better)
             suggestions[word] = get_suggestions(word_lower)
     
     return SpellCheckResponse(errors=errors, suggestions=suggestions)
+
 
 def get_suggestions(word: str, max_suggestions: int = 5) -> List[str]:
     """Generate spelling suggestions"""

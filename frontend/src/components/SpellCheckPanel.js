@@ -15,13 +15,11 @@ function SpellCheckPanel({ content, onCorrection }) {
       const result = await spellCheck(content);
       setErrors(result.errors || []);
       setSuggestions(result.suggestions || {});
-      
-      // Highlight all errors in the editor
+      // Highlight errors in the editor
       if (result.errors && result.errors.length > 0) {
         const editor = document.querySelector('.editor');
         if (editor) {
           let highlightedContent = editor.innerHTML;
-          
           result.errors.forEach(error => {
             const regex = new RegExp(`\\b${error.word}\\b`, 'gi');
             highlightedContent = highlightedContent.replace(
@@ -29,7 +27,6 @@ function SpellCheckPanel({ content, onCorrection }) {
               `<mark class="spelling-error" data-word="${error.word}" style="background-color: #ff6b6b; color: white; padding: 2px 4px; border-radius: 3px; cursor: pointer;">$&</mark>`
             );
           });
-          
           editor.innerHTML = highlightedContent;
         }
       }
@@ -53,13 +50,10 @@ function SpellCheckPanel({ content, onCorrection }) {
   const highlightErrorInEditor = (error) => {
     const editor = document.querySelector('.editor');
     if (!editor) return;
-
-    // Scroll to first occurrence of the error word
     const marks = editor.querySelectorAll('.spelling-error');
     for (let mark of marks) {
       if (mark.textContent.toLowerCase() === error.word.toLowerCase()) {
         mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Flash the highlight
         mark.style.backgroundColor = '#ff3838';
         setTimeout(() => {
           mark.style.backgroundColor = '#ff6b6b';
@@ -73,25 +67,22 @@ function SpellCheckPanel({ content, onCorrection }) {
     const editor = document.querySelector('.editor');
     if (!editor) return;
 
-    // Remove highlighting and replace word
     let editorContent = editor.innerHTML;
-    
-    // Remove the mark tag and replace the word
+    // Remove the mark tag and replace the word (all occurrences on page)
     const regex = new RegExp(
       `<mark class="spelling-error"[^>]*>${error.word}</mark>`,
       'gi'
     );
     editorContent = editorContent.replace(regex, suggestion);
-    
+
     editor.innerHTML = editorContent;
-    onCorrection(editor.innerHTML);
-    
-    // Remove this error from the list
+    onCorrection(editor.innerHTML); // Sync to App.js
+
     setErrors(errors.filter(e => e.word !== error.word));
+    setTimeout(checkSpelling, 100); // Optionally rerun spelling
   };
 
   const ignoreError = (error) => {
-    // Remove highlighting for this specific error
     const editor = document.querySelector('.editor');
     if (editor) {
       const marks = editor.querySelectorAll('.spelling-error');
@@ -102,12 +93,12 @@ function SpellCheckPanel({ content, onCorrection }) {
         }
       });
     }
-    
-    setErrors(errors.filter(e => e !== error));
+    setErrors(errors.filter(e => e.word !== error.word));
+    onCorrection(editor.innerHTML);
+    setTimeout(checkSpelling, 100);
   };
 
   const ignoreAllErrors = (word) => {
-    // Remove all highlighting for this word
     const editor = document.querySelector('.editor');
     if (editor) {
       const marks = editor.querySelectorAll('.spelling-error');
@@ -118,8 +109,9 @@ function SpellCheckPanel({ content, onCorrection }) {
         }
       });
     }
-    
     setErrors(errors.filter(e => e.word !== word));
+    onCorrection(editor.innerHTML);
+    setTimeout(checkSpelling, 100);
   };
 
   return (
@@ -130,13 +122,13 @@ function SpellCheckPanel({ content, onCorrection }) {
       </div>
 
       <div className="panel-tabs">
-        <button 
+        <button
           className={`tab ${activeTab === 'spelling' ? 'active' : ''}`}
           onClick={() => setActiveTab('spelling')}
         >
           Spelling
         </button>
-        <button 
+        <button
           className={`tab ${activeTab === 'grammar' ? 'active' : ''}`}
           onClick={() => setActiveTab('grammar')}
         >
@@ -146,7 +138,7 @@ function SpellCheckPanel({ content, onCorrection }) {
 
       <div className="panel-actions">
         {activeTab === 'spelling' ? (
-          <button 
+          <button
             className="check-btn"
             onClick={checkSpelling}
             disabled={isChecking}
@@ -154,7 +146,7 @@ function SpellCheckPanel({ content, onCorrection }) {
             {isChecking ? 'Checking...' : 'Check Spelling'}
           </button>
         ) : (
-          <button 
+          <button
             className="check-btn"
             onClick={checkGrammar}
             disabled={isChecking}
@@ -175,10 +167,9 @@ function SpellCheckPanel({ content, onCorrection }) {
                   <div className="error-word">
                     <span className="misspelled">{error.word}</span>
                     <span className="error-position">
-                      Page {Math.ceil(error.position / 3000)} • Position: {error.position}
+                      Page {error.page || 1} • Position: {error.position}
                     </span>
                   </div>
-                  
                   {suggestions[error.word] && suggestions[error.word].length > 0 && (
                     <div className="suggestions">
                       <p className="suggestions-label">Suggestions:</p>
@@ -193,22 +184,21 @@ function SpellCheckPanel({ content, onCorrection }) {
                       ))}
                     </div>
                   )}
-                  
                   <div className="error-actions">
-                    <button 
+                    <button
                       className="action-btn locate"
                       onClick={() => highlightErrorInEditor(error)}
                       title="Locate in document"
                     >
                       📍 Locate
                     </button>
-                    <button 
+                    <button
                       className="action-btn ignore"
                       onClick={() => ignoreError(error)}
                     >
                       Ignore
                     </button>
-                    <button 
+                    <button
                       className="action-btn ignore-all"
                       onClick={() => ignoreAllErrors(error.word)}
                     >
@@ -233,7 +223,7 @@ function SpellCheckPanel({ content, onCorrection }) {
                   </div>
                   <p className="error-message">{error.message}</p>
                   <p className="error-position">
-                    Page {Math.ceil(error.position / 3000)} • Position: {error.position}
+                    Page {error.page || 1} • Position: {error.position}
                   </p>
                 </div>
               ))
@@ -246,6 +236,7 @@ function SpellCheckPanel({ content, onCorrection }) {
 }
 
 export default SpellCheckPanel;
+
 
 
 

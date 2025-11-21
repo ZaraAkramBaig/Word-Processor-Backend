@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Home from './pages/Home';
 import MenuBar from './components/MenuBar';
 import FormatToolbar from './components/FormatToolbar';
 import Editor from './components/Editor';
@@ -21,13 +22,13 @@ function App() {
   const [documentContent, setDocumentContent] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [documentId, setDocumentId] = useState(null);
-  const [documentTitle, setDocumentTitle] = useState('Untitled Document');
+  const [documentTitle, setDocumentTitle] = useState('');
   const [pageCount, setPageCount] = useState(1);
   const [showSpellCheck, setShowSpellCheck] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [showHome, setShowHome] = useState(true);
 
-  // Check backend health on mount
   useEffect(() => {
     checkHealth()
       .then(data => {
@@ -38,19 +39,13 @@ function App() {
       });
   }, []);
 
-  // Calculate page count based on lines
   useEffect(() => {
     const plainText = documentContent.replace(/<[^>]*>/g, '');
-    const contentLength = plainText.length;
-    
-    // More accurate: count actual line breaks and content
     const lines = plainText.split('\n').length;
-    const estimatedPages = Math.max(1, Math.ceil(lines / 40)); // ~40 lines per page
-    
+    const estimatedPages = Math.max(1, Math.ceil(lines / 40));
     setPageCount(estimatedPages);
   }, [documentContent]);
 
-  // Calculate word count
   useEffect(() => {
     const words = documentContent
       .replace(/<[^>]*>/g, '')
@@ -60,24 +55,28 @@ function App() {
     setWordCount(words.length);
   }, [documentContent]);
 
-  // Auto-save timer
   useEffect(() => {
     if (!documentId || !documentContent) return;
-
     const autoSaveTimer = setTimeout(() => {
       handleAutoSave();
     }, 30000);
-
     return () => clearTimeout(autoSaveTimer);
   }, [documentContent, documentId]);
 
-  const handleAutoSave = async () => {
-    if (!documentId) return;
+  const handleCreateDocumentFromHome = async (customTitle) => {
     try {
-      await autoSave(documentId, documentContent);
-      setLastSaved(new Date().toLocaleTimeString());
+      const newDoc = await createDocument(customTitle, '');
+      setDocumentId(newDoc.id);
+      setDocumentTitle(newDoc.title);
+      setDocumentContent('');
+      setShowHome(false);
+      setTimeout(() => {
+        const editor = document.querySelector('.editor');
+        if (editor) editor.focus();
+      }, 0);
+      alert(`New document created!\nDocument ID: ${newDoc.id}\n(Save this ID to open your document later)`);
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      alert('Failed to create document');
     }
   };
 
@@ -86,24 +85,10 @@ function App() {
   };
 
   const handleNew = async () => {
-    const title = prompt('Enter document title:', 'Untitled Document');
-    if (!title) return;
-    try {
-      const newDoc = await createDocument(title, '');
-      setDocumentId(newDoc.id);
-      setDocumentTitle(newDoc.title);
-      setDocumentContent('');
-      
-      // Focus the editor
-      setTimeout(() => {
-        const editor = document.querySelector('.editor');
-        if (editor) editor.focus();
-      }, 0);
-      
-      alert(`New document created!\nDocument ID: ${newDoc.id}\n(Save this ID to open your document later)`);
-    } catch (error) {
-      alert('Failed to create document');
-    }
+    setShowHome(true);
+    setDocumentContent('');
+    setDocumentId(null);
+    setDocumentTitle('');
   };
 
   const handleOpen = async () => {
@@ -114,6 +99,7 @@ function App() {
       setDocumentId(doc.id);
       setDocumentTitle(doc.title);
       setDocumentContent(doc.content);
+      setShowHome(false);
       alert('Document opened successfully!');
     } catch (error) {
       alert('Document not found');
@@ -122,7 +108,26 @@ function App() {
 
   const handleSave = async () => {
     if (!documentId) {
-      await handleNew();
+      const title = prompt('Enter a title for your new document:', documentTitle || 'Untitled Document');
+      if (!title) {
+        alert('Cannot save: no title entered.');
+        return;
+      }
+      try {
+        const newDoc = await createDocument(title, documentContent);
+        setDocumentId(newDoc.id);
+        setDocumentTitle(newDoc.title);
+        setDocumentContent(newDoc.content);
+        setShowHome(false);
+        setIsSaving(true);
+        await updateDocument(newDoc.id, { title: newDoc.title, content: documentContent });
+        setLastSaved(new Date().toLocaleTimeString());
+        alert(`Document saved successfully!\nYour Document ID: ${newDoc.id}\n(Keep this ID to open your document later)`);
+        setIsSaving(false);
+      } catch (error) {
+        alert('Failed to create and save document');
+        setIsSaving(false);
+      }
       return;
     }
     setIsSaving(true);
@@ -134,6 +139,16 @@ function App() {
       alert('Failed to save document');
     }
     setIsSaving(false);
+  };
+
+  const handleAutoSave = async () => {
+    if (!documentId) return;
+    try {
+      await autoSave(documentId, documentContent);
+      setLastSaved(new Date().toLocaleTimeString());
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
   };
 
   const handleExport = async (format) => {
@@ -182,36 +197,12 @@ function App() {
   };
 
   const handleInsertPageBreak = () => {
-    const pageBreakHTML = `
-      <div class="page-break-container" style="
-        page-break-after: always;
-        height: 20px;
-        border-top: 3px dashed #0078d4;
-        border-bottom: 3px dashed #0078d4;
-        margin: 20px 0;
-        position: relative;
-        background: #f0f0f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <span style="
-          background: #0078d4;
-          color: white;
-          padding: 2px 10px;
-          border-radius: 3px;
-          font-size: 10px;
-          font-weight: bold;
-        ">Page Break</span>
-      </div>
-      <div style="page-break-before: always;"></div>
-    `;
+    const pageBreakHTML = `<div class="page-break" contenteditable="false"><span>Page Break</span></div><p><br></p>`;
     document.execCommand('insertHTML', false, pageBreakHTML);
   };
 
   const handleSpellCheckCorrection = (correctedContent) => setDocumentContent(correctedContent);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
@@ -243,62 +234,63 @@ function App() {
 
   return (
     <div className="App">
-      <div className="app-header">
-        <h1 className="app-title">Word Processor - {documentTitle}</h1>
-        <div className="header-info">
-          <span className="save-status">
-            {isSaving ? 'Saving...' : lastSaved ? `Last saved: ${lastSaved}` : 'Not saved'}
-          </span>
-          <div className="backend-status">
-            Backend: <span className={backendStatus.includes('✓') ? 'status-ok' : 'status-error'}>
-              {backendStatus}
-            </span>
+      {showHome ? (
+        <Home onCreateDocument={handleCreateDocumentFromHome} />
+      ) : (
+        <>
+          <div className="app-header">
+            <h1 className="app-title">Word Processor - {documentTitle || 'Untitled Document'}</h1>
+            <div className="header-info">
+              <span className="save-status">
+                {isSaving ? 'Saving...' : lastSaved ? `Last saved: ${lastSaved}` : 'Not saved'}
+              </span>
+              <div className="backend-status">
+                Backend: <span className={backendStatus.includes('✓') ? 'status-ok' : 'status-error'}>
+                  {backendStatus}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <MenuBar
-        onNew={handleNew}
-        onOpen={handleOpen}
-        onSave={handleSave}
-        onExport={handleExport}
-        onPrint={handlePrint}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onInsertTable={handleInsertTable}
-        onInsertImage={handleInsertImage}
-        onInsertPageBreak={handleInsertPageBreak}
-      />
-      
-      <FormatToolbar />
-      
-      <div className="main-content">
-        <div className="editor-section">
-          <Editor content={documentContent} onChange={handleContentChange} />
-        </div>
-        {showSpellCheck && (
-          <div className="sidebar">
-            <SpellCheckPanel 
-              content={documentContent} 
-              onCorrection={handleSpellCheckCorrection} 
-            />
+          <MenuBar
+            onNew={handleNew}
+            onOpen={handleOpen}
+            onSave={handleSave}
+            onExport={handleExport}
+            onPrint={handlePrint}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onInsertTable={handleInsertTable}
+            onInsertImage={handleInsertImage}
+            onInsertPageBreak={handleInsertPageBreak}
+          />
+          <FormatToolbar />
+          <div className="main-content">
+            <div className="editor-section">
+              <Editor content={documentContent} onChange={handleContentChange} />
+            </div>
+            {showSpellCheck && (
+              <div className="sidebar">
+                <SpellCheckPanel
+                  content={documentContent}
+                  onCorrection={handleSpellCheckCorrection}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      
-      <StatusBar 
-        wordCount={wordCount} 
-        charCount={documentContent.replace(/<[^>]*>/g, '').length} 
-        pageCount={pageCount} 
-      />
-      
-      <button 
-        className="spellcheck-toggle" 
-        onClick={() => setShowSpellCheck(!showSpellCheck)} 
-        title="Toggle Spell Check Panel"
-      >
-        {showSpellCheck ? '✕' : 'ABC'}
-      </button>
+          <StatusBar
+            wordCount={wordCount}
+            charCount={documentContent.replace(/<[^>]*>/g, '').length}
+            pageCount={pageCount}
+          />
+          <button
+            className="spellcheck-toggle"
+            onClick={() => setShowSpellCheck(!showSpellCheck)}
+            title="Toggle Spell Check Panel"
+          >
+            {showSpellCheck ? '✕' : 'ABC'}
+          </button>
+        </>
+      )}
     </div>
   );
 }

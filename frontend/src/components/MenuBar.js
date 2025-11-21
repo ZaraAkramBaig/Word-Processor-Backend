@@ -58,14 +58,19 @@ function MenuBar({
     const regex = new RegExp(searchTerm, 'gi');
     
     const replaceAll = window.confirm('Replace all occurrences? (OK = Yes, Cancel = First only)');
-    
-    if (replaceAll) {
-      content = content.replace(regex, replaceTerm);
-    } else {
-      content = content.replace(regex, replaceTerm);
-    }
-    
-    editor.innerHTML = content;
+
+if (replaceAll) {
+  // Replace all matches (global /g flag)
+  const regexAll = new RegExp(searchTerm, 'gi');
+  content = content.replace(regexAll, replaceTerm);
+} else {
+  // Replace only first instance (no /g flag)
+  const regexFirst = new RegExp(searchTerm, 'i');
+  content = content.replace(regexFirst, replaceTerm);
+}
+
+editor.innerHTML = content;
+
     closeMenu();
   };
 

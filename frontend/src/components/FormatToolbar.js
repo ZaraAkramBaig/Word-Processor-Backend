@@ -20,7 +20,7 @@ function FormatToolbar() {
     const range = selection.getRangeAt(0);
     const parentElement = range.commonAncestorContainer.parentElement;
     const isHeading = /^H[1-6]$/.test(parentElement.tagName);
-    
+
     if (isHeading) {
       // Remove heading - convert back to paragraph
       const p = document.createElement('p');
@@ -29,18 +29,18 @@ function FormatToolbar() {
     } else {
       // Get selected text
       let text = selection.toString() || parentElement.textContent;
-      
+
       // Apply capitalization based on heading level
       if (level === 1) {
         text = text.toUpperCase(); // H1: ALL CAPS
       } else if (level === 2) {
         text = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); // H2: First letter
       }
-      
+
       // Create heading element
       const heading = document.createElement(`h${level}`);
       heading.textContent = text;
-      
+
       // Replace selection
       range.deleteContents();
       range.insertNode(heading);
@@ -50,23 +50,46 @@ function FormatToolbar() {
     if (editor) editor.focus();
   };
 
-
   const handleFontSizeChange = (e) => {
     const size = e.target.value;
     setFontSize(size);
-    applyFormat('fontSize', size);
 
-    // Apply font size using proper method
     const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      document.execCommand('fontSize', false, '7'); // Use a dummy size
-      const fontElements = document.querySelectorAll('font[size]');
-      fontElements.forEach(el => {
-        el.removeAttribute('size');
-        el.style.fontSize = size;
-      });
+    if (selection.rangeCount) {
+      const range = selection.getRangeAt(0);
+      // If text is selected
+      if (!range.collapsed) {
+        // Create span and apply font size
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+
+        // Move cursor after applied span
+        range.setStartAfter(span);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        // If no text selected, set font size for future input
+        const editor = document.querySelector('.editor');
+        if (editor.contains(selection.anchorNode)) {
+          // Insert an empty span as cursor marker
+          const marker = document.createElement('span');
+          marker.style.fontSize = size;
+          marker.innerHTML = "\u200B"; // zero-width space
+          range.insertNode(marker);
+
+          // Move cursor inside marker
+          range.setStart(marker, 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     }
-    
+
+    // Refocus the editor
     const editor = document.querySelector('.editor');
     if (editor) editor.focus();
   };
@@ -77,10 +100,88 @@ function FormatToolbar() {
     applyFormat('fontName', font);
   };
 
+  // ---- ADDED TEXT COLOR HANDLER ----
+  const handleTextColorChange = (e) => {
+    const color = e.target.value;
+    const selection = window.getSelection();
+
+    if (selection && selection.rangeCount && !selection.isCollapsed) {
+      const range = selection.getRangeAt(0);
+
+      // Wrap selected text in a span with style
+      const span = document.createElement('span');
+      span.style.color = color;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+
+      // Reselect the new span for user experience
+      range.selectNodeContents(span);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // For future text, insert a styled span at cursor
+      const editor = document.querySelector('.editor');
+      if (editor && selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const marker = document.createElement('span');
+        marker.style.color = color;
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
+
+        // Move cursor inside marker
+        range.setStart(marker, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    const editor = document.querySelector('.editor');
+    if (editor) editor.focus();
+  };
+
+  // ---- ADDED HIGHLIGHT HANDLER ----
+  const handleHighlightChange = (e) => {
+    const color = e.target.value;
+    const selection = window.getSelection();
+
+    if (selection && selection.rangeCount && !selection.isCollapsed) {
+      const range = selection.getRangeAt(0);
+
+      // Wrap selected text in a span with highlight style
+      const span = document.createElement('span');
+      span.style.backgroundColor = color;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+
+      // Reselect the new span for user experience
+      range.selectNodeContents(span);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // For future text, insert a styled span at cursor
+      const editor = document.querySelector('.editor');
+      if (editor && selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const marker = document.createElement('span');
+        marker.style.backgroundColor = color;
+        marker.innerHTML = "\u200B";
+        range.insertNode(marker);
+
+        // Move cursor inside marker
+        range.setStart(marker, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    const editor = document.querySelector('.editor');
+    if (editor) editor.focus();
+  };
+
   return (
     <div className="format-toolbar">
       <div className="toolbar-group">
-        <select 
+        <select
           className="font-family-select"
           value={fontFamily}
           onChange={handleFontFamilyChange}
@@ -93,7 +194,7 @@ function FormatToolbar() {
           <option value="Courier New">Courier New</option>
         </select>
 
-        <select 
+        <select
           className="font-size-select"
           value={fontSize}
           onChange={handleFontSizeChange}
@@ -115,7 +216,7 @@ function FormatToolbar() {
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -125,7 +226,7 @@ function FormatToolbar() {
         >
           <strong>B</strong>
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -135,7 +236,7 @@ function FormatToolbar() {
         >
           <em>I</em>
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -145,7 +246,7 @@ function FormatToolbar() {
         >
           <u>U</u>
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -156,28 +257,27 @@ function FormatToolbar() {
           <s>S</s>
         </button>
       </div>
-      {/* mmmmmm */}
-      
+
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <label style={{ fontSize: '9px', marginBottom: '2px' }}>Text</label>
-          <input 
+          <input
             type="color"
             className="color-picker"
-            onChange={(e) => applyFormat('foreColor', e.target.value)}
+            onChange={handleTextColorChange}
             onMouseDown={(e) => e.preventDefault()}
             title="Text Color"
           />
         </div>
-        
+
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <label style={{ fontSize: '9px', marginBottom: '2px' }}>Highlight</label>
-          <input 
+          <input
             type="color"
             className="color-picker"
-            onChange={(e) => applyFormat('hiliteColor', e.target.value)}
+            onChange={handleHighlightChange}
             onMouseDown={(e) => e.preventDefault()}
             title="Highlight Color"
           />
@@ -187,7 +287,7 @@ function FormatToolbar() {
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -197,7 +297,7 @@ function FormatToolbar() {
         >
           ☰
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -207,7 +307,7 @@ function FormatToolbar() {
         >
           ☰
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -217,7 +317,7 @@ function FormatToolbar() {
         >
           ☰
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -232,7 +332,7 @@ function FormatToolbar() {
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -242,7 +342,7 @@ function FormatToolbar() {
         >
           • List
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -257,7 +357,7 @@ function FormatToolbar() {
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -267,7 +367,7 @@ function FormatToolbar() {
         >
           →
         </button>
-        <button 
+        <button
           className="toolbar-btn"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -282,7 +382,7 @@ function FormatToolbar() {
       <div className="toolbar-divider"></div>
 
       <div className="toolbar-group">
-        <button 
+        <button
           className="toolbar-btn toolbar-heading"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -292,7 +392,7 @@ function FormatToolbar() {
         >
           H1
         </button>
-        <button 
+        <button
           className="toolbar-btn toolbar-heading"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -302,7 +402,7 @@ function FormatToolbar() {
         >
           H2
         </button>
-        <button 
+        <button
           className="toolbar-btn toolbar-heading"
           onMouseDown={(e) => {
             e.preventDefault();
@@ -318,3 +418,6 @@ function FormatToolbar() {
 }
 
 export default FormatToolbar;
+
+
+
