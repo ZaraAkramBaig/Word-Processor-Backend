@@ -50,7 +50,7 @@ function Editor({ content, onChange }) {
     const imgs = editor.querySelectorAll('img');
     imgs.forEach(img => {
       img.classList.add('resizable-img');
-      img.style.maxWidth = "624px";
+      img.style.maxWidth = "720px";
       img.style.minWidth = "32px";
       img.style.minHeight = "32px";
       img.style.maxHeight = "880px";
@@ -178,7 +178,7 @@ function Editor({ content, onChange }) {
             height: PAGE_HEIGHT,
             background: '#fff',
             border: '1px solid #ddd',
-            zIndex: -1,
+            zIndex: 0,
             boxSizing: 'border-box',
             pointerEvents: 'none'
           }}
@@ -206,58 +206,67 @@ function Editor({ content, onChange }) {
 
 
   return (
-      <div className="editor-wrapper">
-        <div className="page-container" style={{ position: 'relative', minHeight: PAGE_HEIGHT }}>
-          {renderPageOverlays()}  {/* THIS LINE IS CRITICAL */}
-          <div
-            ref={editorRef}
-            className="editor"
-            contentEditable={true}
-            spellCheck={true}
-            onInput={handleInput}
-            suppressContentEditableWarning={true}
-            style={{
-              minHeight: PAGE_HEIGHT * pageCount,
-              background: 'transparent',
-              position: 'relative',
-              zIndex: 1,
-              outline: 'none'
-            }}
-          />
-        </div>
-        {showTableDialog && (
-          <div className="table-dialog">
-            <div className="dialog-content">
-              <h3>Insert Table</h3>
-              <div className="dialog-row">
-                <label>Rows:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={tableRows}
-                  onChange={e => setTableRows(parseInt(e.target.value))}
-                />
-              </div>
-              <div className="dialog-row">
-                <label>Columns:</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={tableCols}
-                  onChange={e => setTableCols(parseInt(e.target.value))}
-                />
-              </div>
-              <div className="dialog-actions">
-                <button onClick={insertTable}>Insert</button>
-                <button onClick={() => setShowTableDialog(false)}>Cancel</button>
-              </div>
+    <div className="editor-wrapper">
+      <div className="page-container" style={{ position: 'relative', minHeight: PAGE_HEIGHT }}>
+        {renderPageOverlays()}
+        <div
+          ref={editorRef}
+          className="editor"
+          contentEditable={true}
+          spellCheck={true}
+          onInput={handleInput}
+          suppressContentEditableWarning={true}
+          style={{
+            minHeight: PAGE_HEIGHT * pageCount,
+            background: 'transparent',
+            position: 'relative',
+            zIndex: 1,
+            outline: 'none'
+          }}
+        />
+      </div>
+      {showTableDialog && (
+        <div className="table-dialog">
+          <div className="dialog-content">
+            <h3>Insert Table</h3>
+            <div className="dialog-row">
+              <label>Rows:</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={tableRows}
+                onChange={e => setTableRows(parseInt(e.target.value))}
+              />
+            </div>
+            <div className="dialog-row">
+              <label>Columns:</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={tableCols}
+                onChange={e => setTableCols(parseInt(e.target.value))}
+              />
+            </div>
+            <div className="dialog-actions">
+              <button onClick={insertTable}>Insert</button>
+              <button onClick={() => setShowTableDialog(false)}>Cancel</button>
             </div>
           </div>
-        )}
-      </div>
-    );
-  }
+        </div>
+      )}
+    </div>
+  );
+
+}
 
 export default Editor;
+
+
+
+
+
+
+
+
