@@ -25,14 +25,14 @@
   line-height: 1.6;
   outline: none;
   position: relative;
-  z-index: 1;
+  z-index: 1;  /* Make sure this is 1 */
   word-wrap: break-word;
   white-space: pre-wrap;
-  padding: 96px; /* 1-inch margins on all sides (96px at 96 DPI) */
-  background: transparent;
+  padding: 96px; /* 1-inch margins */
+  background: transparent; /* Must be transparent */
   box-sizing: border-box;
-  
 }
+
 
 
 .editor:focus {
@@ -44,13 +44,14 @@
   left: 0;
   top: 0;
   width: 100%;
-  height: 1056px; /* 11 inches at 96 DPI */
-  background: #fff;
+  height: 1056px;
+  background: #fff !important; /* Force white with !important */
   border: 1px solid #ddd;
-  z-index: 0;
+  z-index: -1; /* Must be negative */
   box-sizing: border-box;
   pointer-events: none;
 }
+
 
 .page-number-overlay {
   position: absolute;
@@ -262,6 +263,7 @@
   background: #e1dfdd;
 }
 /* PRINT styles - Fixed for multiple pages */
+/* PRINT styles - Shows ALL pages */
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;
@@ -274,16 +276,25 @@
   }
 
   .editor-wrapper {
-    width: 100%;
-    padding: 0;
-    margin: 0;
-    background: white;
-    overflow: visible;
+    width: 816px; /* 8.5 inches at 96 DPI - FR7-01 */
+    margin: 0 auto;
+    background: #e0e0e0; /* Light gray around pages - this is OK */
+    padding: 20px 0;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
   }
 
+
   .page-container {
-    width: 100%;
+    position: relative;
+    width: 816px; /* 8.5 inches at 96 DPI - FR7-01 */
+    margin: 0 auto;
+    background: transparent; /* Add this line */
   }
+
 
   .editor {
     box-shadow: none;
@@ -293,17 +304,23 @@
     margin: 0;
     padding: 1in;
     background: white;
+    position: static;
     page-break-after: auto;
+  }
+
+  .editor * {
+    page-break-inside: auto;
+  }
+
+  .editor p {
     orphans: 3;
     widows: 3;
   }
 
-  .editor p,
-  .editor div {
-    page-break-inside: avoid;
+  .editor-page-bg {
+    display: none !important;
   }
 
-  .editor-page-bg,
   .page-number-overlay {
     display: none !important;
   }
@@ -315,6 +332,7 @@
     height: 0;
     margin: 0;
     padding: 0;
+    display: block;
   }
 
   .page-break span {
@@ -330,3 +348,4 @@
     max-width: 6.5in;
   }
 }
+
