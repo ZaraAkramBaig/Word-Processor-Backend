@@ -1,5 +1,5 @@
 .editor-wrapper {
-  width: 800px;
+  width: 816px; /* 8.5 inches at 96 DPI - FR7-01 */
   margin: 0 auto;
   background: #e3e3e3;
   padding: 20px 0;
@@ -12,7 +12,7 @@
 
 .page-container {
   position: relative;
-  width: 800px;
+  width: 816px; /* 8.5 inches at 96 DPI - FR7-01 */
   margin: 0 auto;
 }
 
@@ -28,10 +28,12 @@
   z-index: 1;
   word-wrap: break-word;
   white-space: pre-wrap;
-  padding: 30px 40px;
+  padding: 96px; /* 1-inch margins on all sides (96px at 96 DPI) */
   background: transparent;
   box-sizing: border-box;
+  
 }
+
 
 .editor:focus {
   outline: none;
@@ -42,7 +44,7 @@
   left: 0;
   top: 0;
   width: 100%;
-  height: 1056px;
+  height: 1056px; /* 11 inches at 96 DPI */
   background: #fff;
   border: 1px solid #ddd;
   z-index: 0;
@@ -130,7 +132,6 @@
 .editor .resizable-img {
   display: inline-block;
   margin: 8px 0;
-  /* Blue border like Word when selected */
   border: 2px solid transparent;
   box-sizing: border-box;
   background: #fff;
@@ -138,11 +139,10 @@
   overflow: auto;
   min-width: 32px;
   min-height: 32px;
-  /* Allow up to usable width inside the page - adjust as needed */
-  max-width: 720px;
-  max-height: 880px;
-  /* Show native resize handles in Chrome/Edge/Safari */
+  max-width: 624px; /* Content area: 816px - 96px - 96px = 624px */
+  max-height: 864px; /* Page height: 1056px - 96px - 96px = 864px */
 }
+
 
 /* Add visual "Word-like" blue selection border when focused/selected */
 .editor img:focus,
@@ -153,7 +153,6 @@
   outline: 1.5px solid #2e7ffc;
   box-shadow: 0 0 0 2px #bed7ff;
 }
-
 
 .page-break {
   page-break-after: always;
@@ -198,11 +197,11 @@
 .table-dialog {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5); /* semi-transparent dark overlay */
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000; /* on top of all editor content */
+  z-index: 1000;
 }
 
 .dialog-content {
@@ -262,27 +261,53 @@
 .dialog-actions button:last-child:hover {
   background: #e1dfdd;
 }
-
-
-/* PRINT styles */
+/* PRINT styles - Fixed for multiple pages */
 @media print {
-  .editor-wrapper {
-    padding: 0;
-    background: white;
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .editor-wrapper {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background: white;
+    overflow: visible;
+  }
+
   .page-container {
     width: 100%;
   }
+
   .editor {
     box-shadow: none;
-    width: 100%;
-    max-width: 100%;
+    width: 8.5in;
+    max-width: 8.5in;
+    min-height: auto;
     margin: 0;
+    padding: 1in;
+    background: white;
+    page-break-after: auto;
+    orphans: 3;
+    widows: 3;
   }
+
+  .editor p,
+  .editor div {
+    page-break-inside: avoid;
+  }
+
   .editor-page-bg,
   .page-number-overlay {
     display: none !important;
   }
+
   .page-break {
     page-break-after: always;
     border: none;
@@ -291,9 +316,17 @@
     margin: 0;
     padding: 0;
   }
+
   .page-break span {
     display: none;
   }
+
+  .editor table {
+    page-break-inside: avoid;
+  }
+
+  .editor img {
+    page-break-inside: avoid;
+    max-width: 6.5in;
+  }
 }
-
-

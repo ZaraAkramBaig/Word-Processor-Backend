@@ -78,6 +78,34 @@ body {
   background: #fff;
 }
 
+/* Editor wrapper for page sizing */
+.editor-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  background: #e0e0e0;
+  flex: 1;
+}
+
+/* 8.5x11 inch page size (FR7-01) */
+.editor {
+  width: 816px; /* 8.5 inches at 96 DPI */
+  min-height: 1056px; /* 11 inches at 96 DPI */
+  background: white;
+  padding: 96px; /* 1 inch margins */
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  outline: none;
+}
+
+.editor:focus {
+  outline: none;
+}
+
 .sidebar {
   width: 320px;
   background: #f9f9f9;
@@ -127,7 +155,9 @@ body {
   
   .editor {
     box-shadow: none;
-    width: 100%;
+    width: 8.5in;
+    min-height: 11in;
     margin: 0;
+    padding: 1in;
   }
 }

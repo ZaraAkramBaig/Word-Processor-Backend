@@ -162,6 +162,7 @@ function Editor({ content, onChange }) {
   }, []);
 
   // Visual page overlays and numbers
+  // Add this function back (before the return statement)
   const renderPageOverlays = () => {
     const overlays = [];
     for (let i = 0; i < pageCount; i++) {
@@ -202,6 +203,7 @@ function Editor({ content, onChange }) {
     }
     return overlays;
   };
+
 
   return (
     <div className="editor-wrapper">
@@ -256,6 +258,7 @@ function Editor({ content, onChange }) {
       )}
     </div>
   );
+
 }
 
 export default Editor;

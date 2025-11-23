@@ -17,6 +17,7 @@ import {
   exportToDOCX
 } from './api/apiClient';
 
+
 function App() {
   const [backendStatus, setBackendStatus] = useState('checking...');
   const [documentContent, setDocumentContent] = useState('');
@@ -29,6 +30,7 @@ function App() {
   const [lastSaved, setLastSaved] = useState(null);
   const [showHome, setShowHome] = useState(true);
 
+
   useEffect(() => {
     checkHealth()
       .then(data => {
@@ -39,12 +41,14 @@ function App() {
       });
   }, []);
 
+
   useEffect(() => {
     const plainText = documentContent.replace(/<[^>]*>/g, '');
     const lines = plainText.split('\n').length;
     const estimatedPages = Math.max(1, Math.ceil(lines / 40));
     setPageCount(estimatedPages);
   }, [documentContent]);
+
 
   useEffect(() => {
     const words = documentContent
@@ -55,13 +59,24 @@ function App() {
     setWordCount(words.length);
   }, [documentContent]);
 
+  const handleAutoSave = React.useCallback(async () => {
+    if (!documentId) return;
+    try {
+      await autoSave(documentId, documentContent);
+      setLastSaved(new Date().toLocaleTimeString());
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [documentId, documentContent]);
+
   useEffect(() => {
     if (!documentId || !documentContent) return;
     const autoSaveTimer = setTimeout(() => {
       handleAutoSave();
     }, 30000);
     return () => clearTimeout(autoSaveTimer);
-  }, [documentContent, documentId]);
+  }, [documentContent, documentId, handleAutoSave]);
+
 
   const handleCreateDocumentFromHome = async (customTitle) => {
     try {
@@ -74,15 +89,17 @@ function App() {
         const editor = document.querySelector('.editor');
         if (editor) editor.focus();
       }, 0);
-      alert(`New document created!\nDocument ID: ${newDoc.id}\n(Save this ID to open your document later)`);
+      window.alert(`New document created!\nDocument ID: ${newDoc.id}\n(Save this ID to open your document later)`);
     } catch (error) {
-      alert('Failed to create document');
+      window.alert('Failed to create document');
     }
   };
+
 
   const handleContentChange = (content) => {
     setDocumentContent(content);
   };
+
 
   const handleNew = async () => {
     setShowHome(true);
@@ -91,8 +108,9 @@ function App() {
     setDocumentTitle('');
   };
 
+
   const handleOpen = async () => {
-    const docId = prompt('Enter document ID to open:');
+    const docId = window.prompt('Enter document ID to open:');
     if (!docId) return;
     try {
       const doc = await getDocument(docId);
@@ -100,17 +118,18 @@ function App() {
       setDocumentTitle(doc.title);
       setDocumentContent(doc.content);
       setShowHome(false);
-      alert('Document opened successfully!');
+      window.alert('Document opened successfully!');
     } catch (error) {
-      alert('Document not found');
+      window.alert('Document not found');
     }
   };
 
-  const handleSave = async () => {
+
+  const handleSave = React.useCallback(async () => {
     if (!documentId) {
-      const title = prompt('Enter a title for your new document:', documentTitle || 'Untitled Document');
+      const title = window.prompt('Enter a title for your new document:', documentTitle || 'Untitled Document');
       if (!title) {
-        alert('Cannot save: no title entered.');
+        window.alert('Cannot save: no title entered.');
         return;
       }
       try {
@@ -122,10 +141,10 @@ function App() {
         setIsSaving(true);
         await updateDocument(newDoc.id, { title: newDoc.title, content: documentContent });
         setLastSaved(new Date().toLocaleTimeString());
-        alert(`Document saved successfully!\nYour Document ID: ${newDoc.id}\n(Keep this ID to open your document later)`);
+        window.alert(`Document saved successfully!\nYour Document ID: ${newDoc.id}\n(Keep this ID to open your document later)`);
         setIsSaving(false);
       } catch (error) {
-        alert('Failed to create and save document');
+        window.alert('Failed to create and save document');
         setIsSaving(false);
       }
       return;
@@ -134,26 +153,17 @@ function App() {
     try {
       await updateDocument(documentId, { title: documentTitle, content: documentContent });
       setLastSaved(new Date().toLocaleTimeString());
-      alert(`Document saved successfully!\nYour Document ID: ${documentId}\n(Keep this ID to open your document later)`);
+      window.alert(`Document saved successfully!\nYour Document ID: ${documentId}\n(Keep this ID to open your document later)`);
     } catch (error) {
-      alert('Failed to save document');
+      window.alert('Failed to save document');
     }
     setIsSaving(false);
-  };
+  }, [documentId, documentTitle, documentContent]);
 
-  const handleAutoSave = async () => {
-    if (!documentId) return;
-    try {
-      await autoSave(documentId, documentContent);
-      setLastSaved(new Date().toLocaleTimeString());
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-    }
-  };
 
   const handleExport = async (format) => {
     if (!documentId) {
-      alert('Please save the document first');
+      window.alert('Please save the document first');
       return;
     }
     try {
@@ -172,36 +182,49 @@ function App() {
           return;
       }
       if (result.path) window.open(`http://localhost:8000${result.path}`, '_blank');
-      alert(`Document exported as ${format.toUpperCase()}!`);
+      window.alert(`Document exported as ${format.toUpperCase()}!`);
     } catch {
-      alert('Export failed');
+      window.alert('Export failed');
     }
   };
 
-  const handlePrint = () => window.print();
+
+  const handlePrint = React.useCallback(() => {
+    if (!documentContent || documentContent.trim() === '') {
+      window.alert('Cannot print: Document is empty!');
+      return;
+    }
+    window.print();
+  }, [documentContent]);
+
 
   const handleUndo = () => document.execCommand('undo');
   const handleRedo = () => document.execCommand('redo');
+
 
   const handleInsertTable = () => {
     const event = new CustomEvent('insertTable');
     window.dispatchEvent(event);
   };
 
+
   const handleInsertImage = () => {
-    const url = prompt('Enter image URL:');
+    const url = window.prompt('Enter image URL:');
     if (url) {
       const imgHTML = `<img src="${url}" style="max-width: 100%; height: auto;" alt="Inserted image" />`;
       document.execCommand('insertHTML', false, imgHTML);
     }
   };
 
+
   const handleInsertPageBreak = () => {
     const pageBreakHTML = `<div class="page-break" contenteditable="false"><span>Page Break</span></div><p><br></p>`;
     document.execCommand('insertHTML', false, pageBreakHTML);
   };
 
+
   const handleSpellCheckCorrection = (correctedContent) => setDocumentContent(correctedContent);
+
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -230,7 +253,8 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [documentId, documentContent, documentTitle]);
+  }, [handleSave, handlePrint]);
+
 
   return (
     <div className="App">
@@ -294,5 +318,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
